@@ -1,0 +1,23 @@
+SALES Flow
+
+
+SALES ORDER -> VA01/VA02 --> VBAK/VBAp/
+    |
+ Delviery  --> VL01N/VL02N/ --> LIKP/LIPS/   -----------------------------------------------------------------> Shipment  ---> VT01N/VT02N/VT03n
+    |                                                                                                                |_ cost document
+    |_ outbound delivery(VL01N/VL02N/VL03N) ---> with respective sales order --> VGBEL/VGPOS  --> LIIPS
+    |_ inbound  delivery(VL31N/VL32N/VL33N) ---> with respective purchase order -->VGBEL/VGPOS --> LIPS
+    |
+    |
+  INVOICE  --> VF01N/VF02n/F03N   -> VBRK / VBRP /
+     |     --> VBFA( Document Flow)
+     |_ Accounting Document Generated  --> it is moving to the FI Document  
+     
+     
+     Delivery (Open Point)
+        |_ PGI -- POST GOODS ISSUE -->
+        
+        
+        
+     
+    
