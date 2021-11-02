@@ -1,0 +1,190 @@
+
+*&---------------------------------------------------------------------*
+*&      Form  FRM_KONDI_WERT_901
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+FORM frm_kondi_wert_901.
+**Added by 118236 on 10.12.2014 for BDVE112
+*  BREAK-POINT.
+
+  IF komk-kalsm = 'ZDCOMS'.
+    DATA : lw_komv_mrp TYPE komv,
+           lw_komv_vat TYPE komv,
+           lw_komv     TYPE komv,
+           lv_kawrt    TYPE kawrt,
+           lv_cal1     TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_mrp      TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_dp1      TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_zsd      TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_zds4     TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_zds3     TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_zds2     TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_zds1     TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_nmr      TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_dnr      TYPE p,
+           lv_vatrate1 TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_vatrate  TYPE kwert,          "KBETR          #BDVE185      Type change from kbetr to kwert (Length  13   Decimal Places  2) dt:28.12.2016
+           lv_xkwert   TYPE i,
+           lv_pkg      TYPE kwert,
+           lv_fr1      TYPE kwert,
+           lv_total    TYPE kwert,
+           lv_fr_vat   TYPE kwert, "string.
+           lv_vatp     TYPE p DECIMALS 3,
+           lv_gst      TYPE kwert,
+           lt_xkomv    TYPE TABLE OF komv_index WITH HEADER LINE,
+           lv_disc_val TYPE kwert,
+           lv_tabix    TYPE sytabix,
+           lv_mglme    TYPE i.
+
+
+
+    CLEAR : lw_komv_mrp.
+    lt_xkomv[] = xkomv[].
+    READ TABLE xkomv INTO lw_komv_mrp WITH KEY kschl = 'ZMRP'.
+    IF sy-subrc = 0.
+      lv_mrp = lw_komv_mrp-kbetr * 10000.
+      lv_kawrt = lw_komv_mrp-kawrt / 10.
+    ENDIF.
+
+    " -- boc dt:02/11/2021 kiran
+*  read table XKOMV into LW_KOMV_VAT with key KSCHL = 'ZVT1'. "REQUEST DEVK909100 DTD 02.01.17
+*  if SY-SUBRC = 0.
+*    LV_VATRATE = LW_KOMV_VAT-KBETR / 10.
+*    LV_VATRATE1 = LV_VATRATE + 10000.
+*  else.
+*    read table XKOMV into LW_KOMV_VAT with key KSCHL = 'ZCST'.
+*    if SY-SUBRC = 0.
+*      LV_VATRATE = LW_KOMV_VAT-KBETR / 10.
+*      LV_VATRATE1 = LV_VATRATE + 10000.
+*    endif.
+*  endif.
+    " -- eoc dt:02/11/2021 kiran
+    CLEAR : lw_komv.
+
+    READ TABLE xkomv INTO lw_komv WITH KEY kschl = 'ZDS1'.
+    IF sy-subrc = 0.
+      lv_zsd = ( lw_komv-kwert / lv_kawrt  ) * ( -100 ).
+
+    ENDIF.
+
+    CLEAR : lw_komv.
+    READ TABLE xkomv INTO lw_komv WITH KEY kschl = 'ZDS2'.
+    IF sy-subrc = 0.
+      lv_zsd = lv_zsd + ( lw_komv-kbetr * -1 ).
+    ENDIF.
+
+    CLEAR : lw_komv.
+    READ TABLE xkomv INTO lw_komv WITH KEY kschl = 'ZDS3'.
+    IF sy-subrc = 0.
+      lv_zsd = lv_zsd + ( ( lw_komv-kwert / lv_kawrt ) * ( -100 ) ). "* LV_KAWRT
+
+    ENDIF.
+
+    CLEAR : lw_komv.
+    READ TABLE xkomv INTO lw_komv WITH KEY kschl = 'ZDS4'.
+    IF sy-subrc = 0.
+      lv_zsd = lv_zsd + ( lw_komv-kbetr * -1 ).
+    ENDIF.
+
+    IF lv_vatrate1 IS NOT INITIAL.
+
+      lv_cal1 = ( lw_komv_mrp-kbetr - lv_zsd ) * 10000 / lv_vatrate1.
+
+      lv_dp1 =  ( lv_cal1 +  lv_zsd ) .
+
+    ELSE.
+      lv_cal1 = ( lw_komv_mrp-kbetr - lv_zsd ) .
+
+      lv_dp1 =  ( lv_cal1 +  lv_zsd ) .
+
+    ENDIF.
+
+    CHECK: rekursiv NE 'A'..
+
+    CHECK: t001r-reinh NE 0.
+    lv_dp1 = lv_dp1 * ( 1000 / t001r-reinh ) / 1000 * t001r-reinh.
+
+    xkomv-kbetr =  lv_dp1.
+    xkwert  = ( xkomv-kbetr * lv_kawrt ) / 100.
+    xkomv-kwert = xkwert.
+
+    CHECK: rekursiv NE 'A'.
+    CHECK: t001r-reinh NE 0.
+    xkwert = xkwert * ( 1000 / t001r-reinh ) / 1000 * t001r-reinh.
+
+    " ++ boc kiran 2/11/2021
+    CLEAR: lv_gst, lv_disc_val.
+    LOOP AT lt_xkomv.
+      CASE lt_xkomv-kschl.
+        WHEN 'ZDS1' OR 'ZDS3' OR 'ZDS6' OR 'ZDS4'.
+          lv_disc_val = lv_disc_val +  ( ( lt_xkomv-kwert / lv_kawrt  ) *  100  ).
+        WHEN 'JOCG' OR 'JOSG' OR 'JOIG'.
+          lv_gst = lv_gst + ( ( lt_xkomv-kbetr DIV 10 ) ).
+      ENDCASE.
+    ENDLOOP.
+
+    READ TABLE xkomv INTO lw_komv WITH KEY kschl = 'ZDP'.
+    IF sy-subrc EQ 0.
+      lv_tabix = sy-tabix.
+      IF lv_disc_val  GT 0.
+        lv_disc_val = - lv_disc_val.
+      ENDIF.
+      DATA : lv_kwert  TYPE kwert,
+             lv_kwert1 TYPE kwert,
+             lv_kwert2 TYPE kwert.
+      lv_kwert = ( lw_komv_mrp-kbetr +   lv_disc_val ) * 100 .
+      lv_kwert1 = '100.00'  + lv_gst.
+      lv_kwert2 = lv_kwert / lv_kwert1.
+      lv_mglme = komp-mglme.
+      xkwert = xkomv-kwert = ( lv_kwert2 * 100 ) * ( lv_mglme div 1000 ).
+      IF NOT komp-mglme IS INITIAL.
+        xkomv-kbetr = xkwert / komp-mglme .
+      ENDIF.
+*      MODIFY xkomv INDEX lv_tabix.
+    ENDIF.
+    " ++ eoc kiran 2/11/2021
+  ENDIF.
+
+*****Added by PK on 30.08.2016 for bdve180*****
+*  BREAK-POINT.
+  DATA: lw_verpr TYPE verpr,
+        lw_con   TYPE verpr,
+        lc_komv  TYPE komv,
+        lc_kbetr TYPE kbetr.
+
+
+  IF komk-bsart = 'AYR'.
+
+    IF xkomv-kschl = 'ZDIF' AND komp-meins = komp-lagme.
+      IF komp-netpr IS NOT INITIAL.
+        CLEAR :  lw_verpr.
+        SELECT SINGLE verpr FROM mbew INTO lw_verpr
+                      WHERE matnr = komp-matnr AND
+                            bwkey = komp-werks.
+        IF sy-subrc = 0.
+          CLEAR : lc_komv.
+          READ TABLE xkomv INTO lc_komv WITH KEY kschl = 'P005'.
+          IF sy-subrc = 0.
+            lw_verpr = ( lw_verpr * komp-lgumz ) .
+            lw_con  = ( lc_komv-kbetr / komp-kpein ) .
+            lc_kbetr = ( lc_komv-kbetr / komp-kpein )   -  lw_verpr   .
+            xkomv-kbetr =  lc_kbetr.
+            xkwert  =  xkomv-kwert.
+
+          ELSE.
+            READ TABLE xkomv INTO lc_komv WITH KEY kschl = 'P002'.
+            IF sy-subrc = 0.
+              lw_verpr = ( lw_verpr * komp-lgumz ) .
+              lw_con  = ( lc_komv-kbetr / komp-kpein ) .
+              lc_kbetr = ( lc_komv-kbetr / komp-kpein )   -  lw_verpr   .
+              xkomv-kbetr =  lc_kbetr.
+              xkwert  =  xkomv-kwert.
+            ENDIF.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+
+ENDFORM.                    "FRM_KONDI_WERT_901
